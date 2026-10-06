@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { auth } from "@clerk/nextjs/server";
+import { getUserId } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import cloudinary from "@/lib/cloudinary";
 
@@ -8,7 +8,7 @@ export async function PATCH(
   { params }: { params: { courseId: string; chapterId: string } }
 ) {
   try {
-    const { userId } = auth();
+    const userId = getUserId();
     const { isPublished, ...values } = await req.json();
 
     if (!userId) {
@@ -50,7 +50,9 @@ export async function PATCH(
         });
 
         if (assetUsage === 1) {
-          await cloudinary.uploader.destroy(existingCloudinaryData.assestId);
+          await cloudinary.uploader.destroy(existingCloudinaryData.assestId, {
+            resource_type: "video",
+          });
         }
 
         await db.muxData.delete({
@@ -62,7 +64,12 @@ export async function PATCH(
 
       const uploadResponse = await cloudinary.uploader.upload(values.videoUrl, {
         resource_type: "video",
-        folder: "lms_videos", 
+        folder: "lms_videos",
+        // Pre-generate the adaptive-bitrate HLS variant used for the
+        // in-player quality switch. Async so the request returns fast;
+        // the player falls back to progressive mp4 until it is ready.
+        eager: [{ streaming_profile: "full_hd", format: "m3u8" }],
+        eager_async: true,
       });
 
       await db.muxData.create({
@@ -86,7 +93,7 @@ export async function DELETE(
   { params }: { params: { courseId: string; chapterId: string } }
 ) {
   try {
-    const { userId } = auth();
+    const userId = getUserId();
 
     if (!userId) {
       return new NextResponse("Unauthorized", { status: 401 });
@@ -128,7 +135,9 @@ export async function DELETE(
 
         if (assetUsage === 1) {
           // Delete the Cloudinary asset if no other chapter is using it
-          await cloudinary.uploader.destroy(existingCloudinaryData.assestId);
+          await cloudinary.uploader.destroy(existingCloudinaryData.assestId, {
+            resource_type: "video",
+          });
         }
 
         // Delete the Cloudinary data record from the database

@@ -81,6 +81,9 @@ export const columns: ColumnDef<Course>[] = [
     cell: ({ row }) => {
       const price = parseFloat(row.getValue("price") || "0");
 
+      if (!price) {
+        return <span className="font-medium text-sky-700">Free</span>;
+      }
       return <span>${price.toFixed(2)}</span>;
     },
   },

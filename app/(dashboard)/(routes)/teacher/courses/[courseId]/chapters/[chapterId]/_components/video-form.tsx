@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import toast from "react-hot-toast";
 import { Pencil, PlusCircle, Video } from "lucide-react";
 import { Chapter, MuxData } from "@prisma/client";
-import MuxPlayer from "@mux/mux-player-react";
 import { CldVideoPlayer } from "next-cloudinary";
 import "next-cloudinary/dist/cld-video-player.css";
 import { FileUpload } from "@/components/file-upload";
@@ -79,12 +78,26 @@ const VideoForm = ({ initialData, courseId, chapterId }: VideoFormProps) => {
             <Video className="h-10 w-10" />
           </div>
         ) : (
-          <div className="relative aspect-video mt-2">
-            <CldVideoPlayer
-              src={initialData.muxData?.playbackId!}
-              sourceTypes={["hls", "dash"]}
-              transformation={{ streaming_profile: "full_hd" }}
-            />
+          <div className="relative aspect-video mt-2 overflow-hidden rounded-md bg-slate-900">
+            {initialData.muxData?.assestId ? (
+              <CldVideoPlayer
+                id={`chapter-preview-${chapterId}`}
+                key={`preview-${chapterId}-${initialData.muxData.assestId}`}
+                cloudName={process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}
+                src={initialData.muxData.assestId}
+                sourceTypes={["hls"]}
+                transformation={{ streaming_profile: "full_hd" }}
+                colors={{ accent: "#0284c7", base: "#0f172a", text: "#ffffff" }}
+              />
+            ) : (
+              <video
+                className="h-full w-full"
+                src={initialData.videoUrl ?? ""}
+                controls
+                playsInline
+                preload="metadata"
+              />
+            )}
           </div>
         ))}
 

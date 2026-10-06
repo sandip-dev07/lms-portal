@@ -18,6 +18,7 @@ import toast from "react-hot-toast";
 import { Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { formatPrice } from "@/lib/formate";
 
 interface PriceFormProps {
@@ -28,7 +29,8 @@ interface PriceFormProps {
 }
 
 const formSchema = z.object({
-  price: z.coerce.number().min(1, { message: "Price is required" }),
+  price: z.coerce.number().min(0, { message: "Price must be 0 or more" }),
+  isFree: z.boolean().default(false),
 });
 
 const PriceForm = ({ initialData, courseId }: PriceFormProps) => {
@@ -40,15 +42,19 @@ const PriceForm = ({ initialData, courseId }: PriceFormProps) => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      price: initialData.price || undefined,
+      price: initialData.price ?? undefined,
+      isFree: initialData.price === 0,
     },
   });
 
   const { isSubmitting, isValid } = form.formState;
+  const isFree = form.watch("isFree");
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      await axios.patch(`/api/courses/${courseId}`, values);
+      await axios.patch(`/api/courses/${courseId}`, {
+        price: values.isFree ? 0 : values.price,
+      });
       toast.success("Course updated successfully");
       toggleEdit();
       router.refresh();
@@ -56,6 +62,14 @@ const PriceForm = ({ initialData, courseId }: PriceFormProps) => {
       toast.error("Something went wrong");
     }
   };
+
+  const displayPrice =
+    initialData.price === null || initialData.price === undefined
+      ? "No price set"
+      : initialData.price === 0
+        ? "Free"
+        : formatPrice(initialData.price);
+
   return (
     <div className="mt-6 border bg-slate-100 dark:bg-slate-700 rounded-md p-4">
       <div className="font-medium flex items-center justify-between">
@@ -76,10 +90,11 @@ const PriceForm = ({ initialData, courseId }: PriceFormProps) => {
         <p
           className={cn(
             "text-sm mt-2",
-            !initialData.price && "text-slate-700 dark:text-slate-400 italic"
+            (initialData.price === null || initialData.price === undefined) &&
+              "text-slate-700 dark:text-slate-400 italic"
           )}
         >
-          {initialData.price ? formatPrice(initialData.price) : "No price set"}
+          {displayPrice}
         </p>
       )}
 
@@ -88,22 +103,43 @@ const PriceForm = ({ initialData, courseId }: PriceFormProps) => {
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <FormField
               control={form.control}
-              name="price"
+              name="isFree"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="flex items-center gap-x-2 space-y-0 rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2.5 mb-3">
                   <FormControl>
-                    <Input
-                      disabled={isSubmitting}
-                      placeholder="e.g $100"
-                      {...field}
-                      type="number"
-                      step={0.01}
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={(checked) => field.onChange(!!checked)}
                     />
                   </FormControl>
-                  <FormMessage />
+                  <span className="text-sm font-medium leading-none">
+                    Free course — no payment required to enroll
+                  </span>
                 </FormItem>
               )}
             />
+
+            {!isFree && (
+              <FormField
+                control={form.control}
+                name="price"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <Input
+                        disabled={isSubmitting}
+                        placeholder="e.g $100"
+                        {...field}
+                        type="number"
+                        min={0}
+                        step={0.01}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <div className="flex items-center gap-x-2 mt-2">
               <Button type="submit" disabled={isSubmitting || !isValid}>

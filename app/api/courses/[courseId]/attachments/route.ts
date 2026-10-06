@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { auth } from "@clerk/nextjs/server";
+import { getUserId } from "@/lib/auth";
 import { NextResponse } from "next/server";
 
 export async function POST(
@@ -7,7 +7,7 @@ export async function POST(
   { params }: { params: { courseId: string } }
 ) {
   try {
-    const { userId } = auth();
+    const userId = getUserId();
     const { url } = await req.json();
 
     if (!userId) {

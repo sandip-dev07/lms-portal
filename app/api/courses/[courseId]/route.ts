@@ -1,21 +1,18 @@
 import { db } from "@/lib/db";
-import { auth } from "@clerk/nextjs/server";
+import { getUserId } from "@/lib/auth";
 import { NextResponse } from "next/server";
-import Mux from "@mux/mux-node";
+import cloudinary from "@/lib/cloudinary";
 
-// Check if environment variables are set
-if (!process.env.MUX_TOKEN_ID || !process.env.MUX_TOKEN_SECRET) {
-  throw new Error(
-    "MUX_TOKEN_ID and MUX_TOKEN_SECRET must be set in the environment variables"
-  );
-}
-
-const mux = new Mux({
-  tokenId: process.env.MUX_TOKEN_ID,
-  tokenSecret: process.env.MUX_TOKEN_SECRET,
-});
-
-const { video: Video } = mux;
+// Videos are stored on Cloudinary (see chapters/[chapterId]/route.ts).
+// Deleting here only cleans up the Cloudinary asset; missing Cloudinary
+// keys must not break course PATCH/DELETE, so failures are logged.
+const destroyCloudinaryVideo = async (publicId: string) => {
+  try {
+    await cloudinary.uploader.destroy(publicId, { resource_type: "video" });
+  } catch (error) {
+    console.warn("[COURSES_ID] Cloudinary asset deletion failed:", error);
+  }
+};
 
 // Create course
 export async function PATCH(
@@ -23,7 +20,7 @@ export async function PATCH(
   { params }: { params: { courseId: string } }
 ) {
   try {
-    const { userId } = auth();
+    const userId = getUserId();
     if (!userId) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
@@ -50,7 +47,7 @@ export async function DELETE(
   { params }: { params: { courseId: string } }
 ) {
   try {
-    const { userId } = auth();
+    const userId = getUserId();
     if (!userId) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
@@ -75,7 +72,7 @@ export async function DELETE(
 
     for (const chapter of course.chapters) {
       if (chapter.muxData?.assestId) {
-        await Video.assets.delete(chapter.muxData.assestId);
+        await destroyCloudinaryVideo(chapter.muxData.assestId);
       }
     }
 

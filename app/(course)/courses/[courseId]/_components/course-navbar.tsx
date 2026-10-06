@@ -1,4 +1,5 @@
 import NavbarRoutes from "@/components/navbar-routes";
+import { isClerkConfigured } from "@/lib/auth";
 import { Chapter, Course, UserProgress } from "@prisma/client";
 import CourseMobileSidebar from "./course-mobile-sidebar";
 
@@ -13,7 +14,7 @@ const CourseNavbar = ({ course, progressCount }: CourseNavbarProps) => {
   return (
     <div className="p-4 border-b h-full flex items-center shadow-sm bg-white dark:bg-[#020817]">
       <CourseMobileSidebar course={course} progressCount={progressCount} />
-      <NavbarRoutes />
+      <NavbarRoutes clerkConfigured={isClerkConfigured()} />
     </div>
   );
 };

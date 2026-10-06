@@ -13,6 +13,7 @@ interface CourseEnrollButtonProps {
 
 const CourseEnrollButton = ({ courseId, price }: CourseEnrollButtonProps) => {
   const [isLoading, setIsLoading] = useState(false);
+  const isFree = !price;
 
   const onClick = async () => {
     try {
@@ -34,7 +35,7 @@ const CourseEnrollButton = ({ courseId, price }: CourseEnrollButtonProps) => {
       className="w-full md:w-auto"
       size={"sm"}
     >
-      Enroll for {formatPrice(price)}
+      {isFree ? "Enroll for free" : `Enroll for ${formatPrice(price)}`}
     </Button>
   );
 };

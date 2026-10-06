@@ -1,6 +1,6 @@
 import { IconBadge } from "@/components/icon-badge";
 import { db } from "@/lib/db";
-import { auth } from "@clerk/nextjs/server";
+import { getUserId } from "@/lib/auth";
 import {
   CircleDollarSign,
   File,
@@ -21,7 +21,7 @@ import Banner from "@/components/banner";
 import Actions from "./_components/actions";
 
 const CourseIdPage = async ({ params }: { params: { courseId: string } }) => {
-  const { userId } = auth();
+  const userId = getUserId();
 
   if (!userId) {
     return redirect("/login");
@@ -60,7 +60,7 @@ const CourseIdPage = async ({ params }: { params: { courseId: string } }) => {
     course.title,
     course.description,
     course.imageUrl,
-    course.price,
+    course.price !== null && course.price !== undefined,
     course.categoryId,
     course.chapters.some((chapter) => chapter.isPublished),
   ];

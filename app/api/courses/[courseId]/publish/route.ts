@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { auth } from "@clerk/nextjs/server";
+import { getUserId } from "@/lib/auth";
 import { NextResponse } from "next/server";
 
 export async function PATCH(
@@ -7,7 +7,7 @@ export async function PATCH(
   { params }: { params: { courseId: string } }
 ) {
   try {
-    const { userId } = auth();
+    const userId = getUserId();
     if (!userId) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
@@ -38,11 +38,16 @@ export async function PATCH(
       !course.title ||
       !course.description ||
       !course.imageUrl ||
+      course.price === null ||
+      course.price === undefined ||
       !hasPublishedChapters
     ) {
-      return new NextResponse("Course is not ready to be published", {
-        status: 400,
-      });
+      return new NextResponse(
+        "Course is not ready to be published (set a price — 0 for free)",
+        {
+          status: 400,
+        }
+      );
     }
 
     const publishedCourse = await db.course.update({

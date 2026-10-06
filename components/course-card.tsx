@@ -54,6 +54,10 @@ const CourseCard = ({
                   progressCount={progress}
                 />
               </div>
+            ) : !price ? (
+              <p className="text-md md:text-sm font-semibold text-sky-700 dark:text-sky-400">
+                Free
+              </p>
             ) : (
               <p className="text-md md:text-sm font-medium text-slate-700 dark:text-slate-400">
                 {formatPrice(price)}

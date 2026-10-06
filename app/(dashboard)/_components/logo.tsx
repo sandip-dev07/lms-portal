@@ -5,9 +5,11 @@ import React from "react";
 
 const Logo = () => {
   return (
-    <Link className="flex items-center " href="/">
-      <Image src="/logo.png" alt="Logo" width={28} height={28} />
-      <span className="pl-1 text-xl font-semibold">LearnGo.</span>
+    <Link className="flex shrink-0 items-center gap-2" href="/">
+      <Image src="/logo.png" alt="LearnGo logo" width={28} height={28} />
+      <span className="text-xl font-semibold tracking-tight text-slate-900 dark:text-white">
+        Learn<span className="text-sky-600 dark:text-sky-400">Go.</span>
+      </span>
     </Link>
   );
 };

@@ -1,7 +1,7 @@
 import { getChapter } from "@/actions/get-chapter";
 import Banner from "@/components/banner";
-import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
+import { getUserId } from "@/lib/auth";
 import React from "react";
 import VideoPlayer from "./_components/video-player";
 import CourseEnrollButton from "./_components/course-enroll-button";
@@ -15,7 +15,7 @@ const ChapterIdPage = async ({
 }: {
   params: { courseId: string; chapterId: string };
 }) => {
-  const { userId } = auth();
+  const userId = getUserId();
   if (!userId) {
     redirect("/");
   }
@@ -55,7 +55,8 @@ const ChapterIdPage = async ({
             chapterId={params.chapterId}
             title={chapter.title}
             courseId={params.courseId}
-            playbackId={muxData?.playbackId}
+            videoPublicId={muxData?.assestId}
+            videoUrl={muxData?.playbackId}
             nextChapter={nextChapter?.id}
             isLocked={isLocked}
             completeOnEnd={completeOnEnd}
@@ -76,7 +77,7 @@ const ChapterIdPage = async ({
               <div>
                 <CourseEnrollButton
                   courseId={params.courseId}
-                  price={course.price!}
+                  price={course.price ?? 0}
                 />
               </div>
             )}

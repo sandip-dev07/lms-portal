@@ -3,20 +3,46 @@ import { UserButton, useSession } from "@clerk/nextjs";
 import { usePathname } from "next/navigation";
 import React from "react";
 import { Button } from "./ui/button";
-import { LogOut, Moon, Sun } from "lucide-react";
+import { LogOut } from "lucide-react";
 import Link from "next/link";
-import { useTheme } from "next-themes";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import SearchInput from "./search-input";
 
-const NavbarRoutes = () => {
+const NavbarRoutes = ({ clerkConfigured }: { clerkConfigured: boolean }) => {
   const pathname = usePathname();
-  const { setTheme } = useTheme();
+
+  // Clerk not configured (no .env, placeholder, or mismatched keys) —
+  // render a degraded, crash-free nav. useSession()/UserButton would
+  // throw without a working ClerkProvider. The flag comes from a server
+  // component so client and layout always agree.
+  if (!clerkConfigured) {
+    return (
+      <div className="ml-auto flex items-center gap-2">
+        <Link href="/search" className="hidden sm:block">
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-sky-200 text-sky-700 hover:bg-sky-50 hover:text-sky-700 dark:border-sky-900 dark:text-sky-300 dark:hover:bg-sky-950"
+          >
+            Browse courses
+          </Button>
+        </Link>
+        <Link href="/sign-in" title="Add Clerk keys in .env to enable auth">
+          <Button size="sm" className="bg-sky-600 hover:bg-sky-700">
+            Sign in
+          </Button>
+        </Link>
+      </div>
+    );
+  }
+
+  return <AuthenticatedRoutes pathname={pathname} />;
+};
+
+const AuthenticatedRoutes = ({
+  pathname,
+}: {
+  pathname: string | null;
+}) => {
   const { session } = useSession();
 
   const isTeacherPage = pathname?.startsWith("/teacher");
@@ -27,49 +53,47 @@ const NavbarRoutes = () => {
   return (
     <>
       {isSearchPage && (
-        <div className="hidden md:block">
+        <div className="mr-2 hidden md:block">
           <SearchInput />
         </div>
       )}
 
-      <div className="flex gap-x-2 ml-auto z-10">
-        {!isHomePage && (
+      <div className="ml-auto flex min-w-0 items-center gap-2">
+        {!isHomePage && session && (
           <>
             {isTeacherPage || isCoursePage ? (
-              <Link href="/search">
+              <Link href="/search" className="shrink-0">
                 <Button size="sm" variant="ghost">
-                  <LogOut className="h-4 w-4 mr-2" />
+                  <LogOut className="mr-2 h-4 w-4" />
                   Exit
                 </Button>
               </Link>
             ) : (
-              <Link href="/teacher/courses">
-                <Button size="sm">Teacher mode</Button>
+              <Link href="/teacher/courses" className="shrink-0">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-sky-200 text-sky-700 hover:bg-sky-50 hover:text-sky-700 dark:border-sky-900 dark:text-sky-300 dark:hover:bg-sky-950"
+                >
+                  <span className="hidden min-[400px]:inline">Teacher mode</span>
+                  <span className="min-[400px]:hidden">Teach</span>
+                </Button>
               </Link>
             )}
           </>
         )}
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="icon">
-              <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-              <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-              <span className="sr-only">Toggle theme</span>
+        {isHomePage && (
+          <Link href="/search" className="hidden sm:block">
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-sky-200 text-sky-700 hover:bg-sky-50 hover:text-sky-700 dark:border-sky-900 dark:text-sky-300 dark:hover:bg-sky-950"
+            >
+              Browse courses
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setTheme("light")}>
-              Light
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setTheme("dark")}>
-              Dark
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setTheme("system")}>
-              System
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          </Link>
+        )}
 
         {isHomePage ? (
           <>
@@ -77,12 +101,20 @@ const NavbarRoutes = () => {
               <UserButton />
             ) : (
               <Link href="/sign-in">
-                <Button size="sm">Sign in</Button>
+                <Button size="sm" className="bg-sky-600 hover:bg-sky-700">
+                  Sign in
+                </Button>
               </Link>
             )}
           </>
-        ) : (
+        ) : session ? (
           <UserButton />
+        ) : (
+          <Link href="/sign-in">
+            <Button size="sm" className="bg-sky-600 hover:bg-sky-700">
+              Sign in
+            </Button>
+          </Link>
         )}
       </div>
     </>

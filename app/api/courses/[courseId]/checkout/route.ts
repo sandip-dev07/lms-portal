@@ -9,7 +9,12 @@ export async function POST(
   { params }: { params: { courseId: string } }
 ) {
   try {
-    const user = await currentUser();
+    let user = null;
+    try {
+      user = await currentUser();
+    } catch {
+      user = null;
+    }
     if (!user || !user.id || !user.emailAddresses?.[0]?.emailAddress) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
@@ -36,6 +41,28 @@ export async function POST(
 
     if (purchase) {
       return new NextResponse("Already purchased", { status: 400 });
+    }
+
+    // Free course (price 0 or unset): enroll directly, no Stripe involved.
+    if (!course.price) {
+      await db.purchase.create({
+        data: {
+          courseId: params.courseId,
+          userId: user.id,
+        },
+      });
+
+      const firstChapter = await db.chapter.findFirst({
+        where: { courseId: params.courseId, isPublished: true },
+        orderBy: { position: "asc" },
+        select: { id: true },
+      });
+
+      return NextResponse.json({
+        url: firstChapter
+          ? `/courses/${course.id}/chapters/${firstChapter.id}`
+          : `/courses/${course.id}`,
+      });
     }
 
     // Line items for the Stripe checkout

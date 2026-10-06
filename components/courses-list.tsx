@@ -17,7 +17,7 @@ const CoursesList = ({ data }: CoursesListProps) => {
             title={course.title}
             imageUrl={course.imageUrl!}
             chapterLength={course.chapters.length}
-            price={course.price!}
+            price={course.price ?? 0}
             category={course?.category?.name!}
             progress={course.progress!}
           />

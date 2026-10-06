@@ -1,31 +1,105 @@
-import React from "react";
+import { db } from "@/lib/db";
+import type { CourseWithProgressWithCategory } from "@/actions/get-courses";
 import HomeNavbar from "./_components/home-navbar";
-import HomeButtons from "./_components/home-buttons";
+import Hero, { type HeroCourse } from "./_components/hero";
+import CategoriesStrip, {
+  type CategoryWithCount,
+} from "./_components/categories-strip";
+import Catalog from "./_components/catalog";
+import Features from "./_components/features";
+import HowItWorks from "./_components/how-it-works";
+import Teach from "./_components/teach";
+import Faq from "./_components/faq";
+import SiteFooter from "./_components/site-footer";
 
-const Home = () => {
+const toHeroCourse = (course: {
+  id: string;
+  title: string;
+  imageUrl: string | null;
+  price: number | null;
+  category: { name: string } | null;
+  chapters: { id: string }[];
+}): HeroCourse => ({
+  id: course.id,
+  title: course.title,
+  imageUrl: course.imageUrl,
+  price: course.price,
+  categoryName: course.category?.name ?? null,
+  chapterCount: course.chapters.length,
+});
+
+const Home = async () => {
+  let courses: CourseWithProgressWithCategory[] = [];
+  let categoryItems: CategoryWithCount[] = [];
+  let categoryCount = 0;
+  let totalPublished = 0;
+  let totalChapters = 0;
+
+  try {
+    const [published, categories, publishedCount, chapterCount] =
+      await Promise.all([
+        db.course.findMany({
+          where: { isPublished: true },
+          include: {
+            category: true,
+            chapters: {
+              where: { isPublished: true },
+              select: { id: true },
+            },
+          },
+          orderBy: { createdAt: "desc" },
+          take: 8,
+        }),
+        db.category.findMany({
+          orderBy: { name: "asc" },
+          include: {
+            _count: {
+              select: { courses: { where: { isPublished: true } } },
+            },
+          },
+        }),
+        db.course.count({ where: { isPublished: true } }),
+        db.chapter.count({
+          where: { isPublished: true, course: { isPublished: true } },
+        }),
+      ]);
+    courses = published.map((course) => ({ ...course, progress: null }));
+    categoryItems = categories.map((category) => ({
+      id: category.id,
+      name: category.name,
+      courseCount: category._count.courses,
+    }));
+    categoryCount = categories.length;
+    totalPublished = publishedCount;
+    totalChapters = chapterCount;
+  } catch {
+    // Landing page must never crash because the catalog query failed.
+    courses = [];
+    categoryItems = [];
+    categoryCount = 0;
+  }
+
+  const featured = courses[0] ?? null;
+
   return (
-    <main className="mx-auto w-full overflow-hidden overflow-y-hidden">
-      <div className="h-[75px] fixed inset-y-0 w-full z-50">
+    <main className="min-h-screen bg-white dark:bg-slate-950">
+      <div className="fixed inset-x-0 top-0 z-50 h-16">
         <HomeNavbar />
       </div>
-
-      <div className="h-[100vh] w-full dark:bg-[#020817] bg-white  dark:bg-grid-white/[0.2] bg-grid-black/[0.2] relative flex items-center justify-center p-4 flex-col overflow-hidden">
-        {/* Radial gradient for the container to give a faded look */}
-        <div className="absolute pointer-events-none inset-0 flex items-center justify-center dark:bg-[#020817] bg-white [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]"></div>
-
-        <p className="text-4xl sm:text-6xl font-bold relative z-20 bg-clip-text text-transparent bg-gradient-to-b from-neutral-200 to-neutral-700 py-8 text-center">
-          Unlock Your Learning Potential.
-        </p>
-
-        <div className="text-base sm:text-lg relative z-20 bg-clip-text py-3 md:py-6 text-center text-black/70 dark:text-white/70 italic">
-          Our state-of-the-art Learning Management System (LMS) enables
-          organizations <br className="hidden sm:block" /> to deliver impactful
-          online learning experiences.
-        </div>
-
-        <div className="py-3 md:py-6">
-          <HomeButtons />
-        </div>
+      <div className="pt-16">
+        <Hero
+          courseCount={totalPublished}
+          chapterCount={totalChapters}
+          categoryCount={categoryCount}
+          featured={featured ? toHeroCourse(featured) : null}
+        />
+        <CategoriesStrip items={categoryItems} />
+        <Catalog courses={courses.slice(0, 4)} />
+        <Features />
+        <HowItWorks />
+        <Teach />
+        <Faq />
+        <SiteFooter />
       </div>
     </main>
   );

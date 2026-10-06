@@ -76,7 +76,6 @@ const VideoPlayer = ({
         <CldVideoPlayer
           id={`chapter-video-${chapterId}`}
           key={`adaptive-${chapterId}`}
-          cloudName={process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}
           src={videoPublicId}
           sourceTypes={["hls"]}
           transformation={{ streaming_profile: "full_hd" }}

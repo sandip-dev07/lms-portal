@@ -83,7 +83,6 @@ const VideoForm = ({ initialData, courseId, chapterId }: VideoFormProps) => {
               <CldVideoPlayer
                 id={`chapter-preview-${chapterId}`}
                 key={`preview-${chapterId}-${initialData.muxData.assestId}`}
-                cloudName={process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}
                 src={initialData.muxData.assestId}
                 sourceTypes={["hls"]}
                 transformation={{ streaming_profile: "full_hd" }}
